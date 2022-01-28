@@ -134,7 +134,35 @@ struct Reply process_command(const int sockfd, char* command)
 	// 
 	// - CREATE/DELETE/JOIN and "<name>" are separated by one space.
 	// ------------------------------------------------------------
-
+	
+	struct Reply response;
+	char buffer[256];
+	int data = 0;
+	int buffer_back = 0;
+	
+	if(strncmp(command, "CREATE", 6) == 0 || strncmp(command, "DELETE", 6) == 0){
+		printf("Create found or Delete found\n");
+		send(sockfd, command, strlen(command), 0);
+		data = recv(sockfd, buffer, 255, 0);
+		
+		buffer_back = atoi(buffer);
+		if(buffer_back == 0){
+			response.status = SUCCESS;
+		}
+		else{
+			response.status = FAILURE_ALREADY_EXISTS;
+		}
+		
+		return response;
+	}
+	else if(strncmp(command, "JOIN", 4) == 0){
+		printf("Join found\n");
+		send(sockfd, command, strlen(command), 0);
+	}
+	else if(strncmp(command, "LIST", 4) == 0){
+		printf("List found\n");
+		send(sockfd, command, strlen(command), 0);
+	}
 
 	// ------------------------------------------------------------
 	// GUIDE 2:
