@@ -9,6 +9,10 @@
 #include <string.h>
 #include "interface.h"
 
+#define SERVER_PORT     3005
+#define BUFFER_LENGTH    250
+#define FALSE              0
+#define SERVER_NAME     "ServerHostName"
 
 /*
  * TODO: IMPLEMENT BELOW THREE FUNCTIONS
@@ -59,6 +63,7 @@ int main(int argc, char** argv)
  */
 int connect_to(const char *host, const int port)
 {
+	
 	// ------------------------------------------------------------
 	// GUIDE :
 	// In this function, you are suppose to connect to the server.
@@ -68,9 +73,35 @@ int connect_to(const char *host, const int port)
 	// Finally, you should return the socket fildescriptor
 	// so that other functions such as "process_command" can use it
 	// ------------------------------------------------------------
-
-    // below is just dummy code for compilation, remove it.
-	int sockfd = -1;
+	
+	int sockfd = -1; 
+	int rc;
+	int bytesReceived;
+	char buffer[BUFFER_LENGTH];
+	char server[256];
+	struct sockaddr_in serveraddr;
+	struct hostent *hostp;
+	
+	sockfd = socket(AF_INET, SOCK_STREAM, 0);
+	if(sockfd < 0){
+		perror("Client Socket Failed");
+		return -1;
+	}
+	
+	//connect to given host
+	strcpy(server, host);
+	
+	memset(&serveraddr, 0, sizeof(serveraddr));
+    serveraddr.sin_family = AF_INET;
+    serveraddr.sin_port = htons(port);
+    serveraddr.sin_addr.s_addr = inet_addr(server);
+    
+    rc = connect(sockfd, (struct sockaddr *)&serveraddr, sizeof(serveraddr));
+    if(rc < 0){
+    	perror("Client failed to connect");
+    	return -1;
+    }
+    
 	return sockfd;
 }
 

@@ -21,12 +21,15 @@ struct chatroom{
 };
 
 int main(int argc, char const *argv[]){
+    printf("Beginning the main\n");
     //get preliminary information such as port number or name
     int slave_socket;
     int master_socket;
     int rc;
     struct chatroom rooms[256];
+    char buffer[256];
     int num_rooms = 0;
+    fd_set read_fd;
     
     memset(rooms, 0, sizeof(struct chatroom) * 256);
     
@@ -40,10 +43,12 @@ int main(int argc, char const *argv[]){
         return -1;
     }
     
+    printf("Socket has been created\n");
+    
     //associate port with socket
     server.sin_family = AF_INET;
     server.sin_addr.s_addr = htonl(INADDR_ANY);
-    server.sin_port = htons((short)8652);
+    server.sin_port = htons(atoi(argv[1]));
     
     rc = bind(slave_socket, (struct sockaddr*)&server, sizeof(server));
     if(rc < 0){
@@ -51,9 +56,49 @@ int main(int argc, char const *argv[]){
         return -1;
     }
     
+    printf("Socket is binded\n");
+    
     rc = listen(slave_socket, 10);
     if(rc < 0){
         perror("Listen Failed");
         return -1;
     }
+    
+    printf("Socket is listening\n");
+    
+    master_socket = accept(slave_socket, NULL, NULL);
+    if(master_socket < 0){
+        perror("Socket for master failed");
+        return -1;
+    }
+    
+    printf("Socket is accepting\n");
+    
+    FD_ZERO(&read_fd);
+    FD_SET(master_socket, &read_fd);
+    
+    rc = select(master_socket+1, &read_fd, NULL, NULL, NULL);
+    if(rc < 0){
+        perror("Select Failed");
+        return -1;
+    }
+    
+    printf("System selected\n");
+    
+    int length = 256;
+    
+    rc = recv(master_socket, buffer, sizeof(buffer), 0);
+    
+    rc = send(master_socket, buffer, sizeof(buffer), 0);
+    
+    while(1){
+        if(slave_socket != -1){
+            close(slave_socket);
+        }
+        if(master_socket != -1){
+            close(master_socket);
+        }
+    }
+    
+    return 0;
 }
