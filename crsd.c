@@ -47,6 +47,17 @@ void * client_request(void * master_sock){
         data_rec = recv(master_socket, request, 256, 0);
         //check if request has data
         if(data_rec > 0){
+            
+            for(int i = 0; i < strlen(request); i++){
+                if(isspace(request[i])){
+                    name = "";
+                }
+                else{
+                    name += request[i];
+                }
+            }
+            std::cout << "Name of room is: " << name << std::endl;
+            
             if(strncmp(request, "CREATE", 6) == 0){
                 printf("Create found in server\n");
                 
@@ -63,15 +74,6 @@ void * client_request(void * master_sock){
                 }
                 
                 //find the space is the request given and then save the name
-                for(int i = 0; i < strlen(request); i++){
-                    if(isspace(request[i])){
-                        name = "";
-                    }
-                    else{
-                        name += request[i];
-                    }
-                }
-                printf("Name of room is: \n", name);
                 room.name = name;
                 chatrooms->push_back(room);
                 
@@ -85,16 +87,43 @@ void * client_request(void * master_sock){
             }
             else if(strncmp(request, "DELETE", 6) == 0){
                 printf("Delete found in server\n");
+                
+                bool exists = false;
+                auto del_room = chatrooms->end();
+                chatroom cur_room;
+                response = "0\n";
+                //find the room with the given name
+                for(auto i = chatrooms->begin(); i != chatrooms->end(); ++i){
+                    cur_room = *i;
+                    if(cur_room.name == name){
+                        std::cout << "Found room with name for delete" << std::endl;
+                        del_room = i;
+                        cur_room.active = false;
+                        exists = true;
+                        break;
+                    }
+                }
+                if(exists == true){
+                    chatrooms->erase(del_room);
+                }
+                else{
+                    response = "2\n";
+                }
+                
+                send(master_socket, response.c_str(), response.length(), 0);
             }
             else if(strncmp(request, "JOIN", 4) == 0){
                 printf("Join found in server\n");
+                
+                int new_port = 0;
+                
             }
             else if(strncmp(request, "LIST", 4) == 0){
                 printf("List found in server\n");
             }
         }
     }
-    //pthread_exit(NULL);
+    pthread_exit(NULL);
 }
 
 int main(int argc, char const *argv[]){

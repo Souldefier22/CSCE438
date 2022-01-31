@@ -143,7 +143,7 @@ struct Reply process_command(const int sockfd, char* command)
 	if(strncmp(command, "CREATE", 6) == 0 || strncmp(command, "DELETE", 6) == 0){
 		printf("Create found or Delete found\n");
 		send(sockfd, command, strlen(command), 0);
-		data = recv(sockfd, buffer, 255, 0);
+		recv(sockfd, buffer, 255, 0);
 		
 		buffer_back = atoi(buffer);
 		if(buffer_back == 0){
@@ -214,11 +214,6 @@ struct Reply process_command(const int sockfd, char* command)
 	// ------------------------------------------------------------
 
 	// REMOVE below code and write your own Reply.
-	struct Reply reply;
-	reply.status = SUCCESS;
-	reply.num_member = 5;
-	reply.port = 1024;
-	return reply;
 }
 
 /* 
