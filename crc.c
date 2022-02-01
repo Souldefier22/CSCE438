@@ -140,8 +140,23 @@ struct Reply process_command(const int sockfd, char* command)
 	int data = 0;
 	int buffer_back = 0;
 	
-	if(strncmp(command, "CREATE", 6) == 0 || strncmp(command, "DELETE", 6) == 0){
-		printf("Create found or Delete found\n");
+	if(strncmp(command, "CREATE", 6) == 0){
+		printf("Create found\n");
+		send(sockfd, command, strlen(command), 0);
+		recv(sockfd, buffer, 255, 0);
+		
+		buffer_back = atoi(buffer);
+		if(buffer_back == 0){
+			response.status = SUCCESS;
+		}
+		else{
+			response.status = FAILURE_ALREADY_EXISTS;
+		}
+		
+		return response;
+	}
+	else if(strncmp(command, "DELETE", 6) == 0){
+		printf("Delete found\n");
 		send(sockfd, command, strlen(command), 0);
 		recv(sockfd, buffer, 255, 0);
 		

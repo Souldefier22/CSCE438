@@ -26,9 +26,58 @@ struct chatroom{
     pthread_t id;
 };
 
+void * chatting(void * input){
+    printf("made it to chatting\n");
+}
+
 void * chat_handler(void * input){
     printf("Made it to chat_handler\n");
-    exit(1);
+    
+    chatroom room_data = *(chatroom*)input;
+    int port = room_data.port;
+    int rc;
+    
+    //make a socket for the room
+    int room_sock = socket(AF_INET, SOCK_STREAM, 0);
+    if(room_sock < 0){
+        perror("Could not create a socket for room\n");
+        exit(1);
+    }
+    
+    //setup room addr based on lecture slides
+    struct sockaddr_in room_addr;
+    memset(&room_addr, 0, sizeof(room_addr));
+    room_addr.sin_family = AF_INET;
+    room_addr.sin_addr.s_addr = INADDR_ANY;
+    room_addr.sin_port = htons(port);
+    
+    rc = bind(room_sock, (struct sockaddr*)&room_addr, (socklen_t) sizeof(room_addr));
+    if(rc < 0){
+        perror("Binding Failed for Room");
+        exit(1);
+    }
+    
+    rc = listen(room_sock, 10);
+    if(rc < 0){
+        perror("Listen Failed for Room");
+        exit(1);
+    }
+    
+    int client_sock = 0;
+    
+    while(room_data.active == true){
+        client_sock = accept(room_sock, NULL, NULL);
+        
+        if(client_sock < 0){
+            perror("Accept in Room Failed");
+            exit(1);
+        }
+        
+        pthread_t t_thread;
+        pthread_create(&t_thread, NULL, chatting, input);
+    }
+    
+    pthread_exit(NULL);
 }
 
 //what to do for different requests given by client
@@ -61,26 +110,43 @@ void * client_request(void * master_sock){
             if(strncmp(request, "CREATE", 6) == 0){
                 printf("Create found in server\n");
                 
-                struct chatroom room;
-                room.num_members = 0;
-                room.active = true;
-                //get a new port for the new room based on previously used ports
-                if(chatrooms->empty()){
-                    room.port = start_port + 1;
+                bool exists = false;
+                chatroom cur_room;
+                
+                //check if room already exists
+                for(auto i = chatrooms->begin(); i != chatrooms->end(); ++i){
+                    cur_room = *i;
+                    if(cur_room.name == name){
+                        exists = true;
+                        break;
+                    }
+                }
+                
+                if(exists == false){
+                    struct chatroom room;
+                    room.num_members = 0;
+                    room.active = true;
+                    //get a new port for the new room based on previously used ports
+                    if(chatrooms->empty()){
+                        room.port = start_port + 1;
+                    }
+                    else{
+                        chatroom prev_room = chatrooms->at(chatrooms->size() - 1);
+                        room.port = prev_room.port + 1;
+                    }
+                    
+                    //find the space is the request given and then save the name
+                    room.name = name;
+                    chatrooms->push_back(room);
+                    
+                    pthread_t room_thread;
+                    pthread_attr_t room_attr;
+                    pthread_create(&room_thread, &room_attr, chat_handler, (void*) &room);
+                    response = "0\n";
                 }
                 else{
-                    chatroom prev_room = chatrooms->at(chatrooms->size() - 1);
-                    room.port = prev_room.port + 1;
+                    response = "1\n";
                 }
-                
-                //find the space is the request given and then save the name
-                room.name = name;
-                chatrooms->push_back(room);
-                
-                pthread_t room_thread;
-                pthread_attr_t room_attr;
-                pthread_create(&room_thread, &room_attr, chat_handler, (void*) &room);
-                response = "0\n";
                 
                 send(master_socket, response.c_str(), response.length(), 0);
                 
