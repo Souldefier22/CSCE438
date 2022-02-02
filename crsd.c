@@ -18,16 +18,15 @@ int start_port = 3006;
 
 struct chatroom{
     int num_members;
-    int slave;
+    int sock;
     int port;
-    int members[256];
     std::string name;
     bool active = false;
     pthread_t id;
 };
 
 void * chatting(void * input){
-    printf("made it to chatting\n");
+    std::cout << "Made it to chatting" << std::endl;
 }
 
 void * chat_handler(void * input){
@@ -64,9 +63,17 @@ void * chat_handler(void * input){
     }
     
     int client_sock = 0;
+    struct sockaddr_in client_addr;
+    int client_length = sizeof(client_addr);
+    memset(&client_addr, 0, client_length);
     
+    std::cout << "Made it to while loop" << std::endl;
     while(room_data.active == true){
-        client_sock = accept(room_sock, NULL, NULL);
+        std::cout << "Inside loop" << std::endl;
+        client_sock = accept(room_sock, (struct sockaddr*) &client_addr, (socklen_t*) &client_length);
+        room_data.sock = client_sock;
+        
+        std::cout << "Accept worked" << std::endl;
         
         if(client_sock < 0){
             perror("Accept in Room Failed");
@@ -74,9 +81,12 @@ void * chat_handler(void * input){
         }
         
         pthread_t t_thread;
-        pthread_create(&t_thread, NULL, chatting, input);
+        pthread_attr_t t_attr;
+        pthread_create(&t_thread, &t_attr, chatting, (void*) input);
+        std::cout << "Made thread for chatting" << std::endl;
     }
     
+    close(client_sock);
     pthread_exit(NULL);
 }
 
@@ -181,8 +191,23 @@ void * client_request(void * master_sock){
             else if(strncmp(request, "JOIN", 4) == 0){
                 printf("Join found in server\n");
                 
-                int new_port = 0;
+                int new_port = -1;
+                chatroom cur_room;
                 
+                for(auto i = chatrooms->begin(); i != chatrooms->end(); ++i){
+                    cur_room = *i;
+                    if(cur_room.name == name){
+                        new_port = cur_room.port;
+                        break;
+                    }
+                }
+                
+                if(new_port != -1){
+                    response = std::to_string(new_port) + " " + std::to_string(cur_room.num_members);
+                }
+                else{
+                    response = "2\n";
+                }
             }
             else if(strncmp(request, "LIST", 4) == 0){
                 printf("List found in server\n");
