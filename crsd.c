@@ -198,6 +198,7 @@ void * client_request(void * master_sock){
                 for(auto i = chatrooms->begin(); i != chatrooms->end(); ++i){
                     cur_room = *i;
                     if(cur_room.name == name){
+                        i->num_members += 1;
                         new_port = cur_room.port;
                         break;
                     }

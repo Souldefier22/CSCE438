@@ -200,6 +200,15 @@ struct Reply process_command(const int sockfd, char* command)
 	else if(strncmp(command, "LIST", 4) == 0){
 		printf("List found\n");
 		send(sockfd, command, strlen(command), 0);
+		recv(sockfd, buffer, 255, 0);
+		
+		strcpy(response.list_room, buffer);
+		response.status = SUCCESS;
+		
+		return response;
+	}
+	else{
+		response.status = FAILURE_INVALID;
 	}
 
 	// ------------------------------------------------------------
