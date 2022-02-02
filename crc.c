@@ -174,6 +174,28 @@ struct Reply process_command(const int sockfd, char* command)
 		printf("Join found\n");
 		send(sockfd, command, strlen(command), 0);
 		recv(sockfd, buffer, 255, 0);
+		char dl[] = " ";
+		
+		buffer_back = atoi(buffer);
+		if(buffer_back != 2){
+			response.status = SUCCESS;
+			char *buffer2 = (char*) calloc(strlen(command) + 1, sizeof(char));
+			strncpy(buffer2, buffer, strlen(buffer));
+			
+			char *token = strtok(buffer2, dl);
+			char *null_token = strtok(NULL, dl);
+			int port = atoi(token);
+			int member = atoi(null_token);
+			
+			//finish setting up Reply
+			response.num_member = member;
+			response.port = port;
+		}
+		else{
+			response.status = FAILURE_ALREADY_EXISTS;
+		}
+		
+		return response;
 	}
 	else if(strncmp(command, "LIST", 4) == 0){
 		printf("List found\n");

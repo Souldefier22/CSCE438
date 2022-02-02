@@ -194,6 +194,7 @@ void * client_request(void * master_sock){
                 int new_port = -1;
                 chatroom cur_room;
                 
+                //find the room with the given name
                 for(auto i = chatrooms->begin(); i != chatrooms->end(); ++i){
                     cur_room = *i;
                     if(cur_room.name == name){
@@ -202,6 +203,7 @@ void * client_request(void * master_sock){
                     }
                 }
                 
+                //reply with port number so client can connect
                 if(new_port != -1){
                     response = std::to_string(new_port) + " " + std::to_string(cur_room.num_members);
                 }
