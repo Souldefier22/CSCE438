@@ -20,6 +20,7 @@ struct chatroom{
     int num_members;
     int sock;
     int port;
+    std::vector<int> fids;
     std::string name;
     bool active = false;
     pthread_t id;
@@ -27,51 +28,50 @@ struct chatroom{
 
 void * chatting(void * input){
     std::cout << "Made it to chatting" << std::endl;
+    
+    chatroom * room = (chatroom *) input;
+    std::vector<int> fids = room->fids;
+    int sock = room->sock;
+    char message[MAX_DATA];
+    
+    while(1){
+        memset(message, 0, MAX_DATA);
+        int response = recv(sock, message, MAX_DATA, 0);
+        if(response > 0){
+            int fid;
+            //find the room with the given name
+            for(auto i = fids.begin(); i != fids.end(); ++i){
+                fid = *i;
+                //send msg to all members except person closing
+                if(fid != sock && fid > 0){
+                    std::cout << "sending msg" << std::endl;
+                    send(fid, message, MAX_DATA, 0);
+                }
+            }
+        }
+    }
 }
 
 void * chat_handler(void * input){
     printf("Made it to chat_handler\n");
     
-    chatroom room_data = *(chatroom*)input;
-    int port = room_data.port;
+    chatroom * room_data = (chatroom*)input;
+    int port = room_data->port;
     int rc;
     
     //make a socket for the room
-    int room_sock = socket(AF_INET, SOCK_STREAM, 0);
-    if(room_sock < 0){
-        perror("Could not create a socket for room\n");
-        exit(1);
-    }
+    int room_sock = room_data->sock;
+    int client_sock;
     
-    //setup room addr based on lecture slides
-    struct sockaddr_in room_addr;
-    memset(&room_addr, 0, sizeof(room_addr));
-    room_addr.sin_family = AF_INET;
-    room_addr.sin_addr.s_addr = INADDR_ANY;
-    room_addr.sin_port = htons(port);
-    
-    rc = bind(room_sock, (struct sockaddr*)&room_addr, (socklen_t) sizeof(room_addr));
-    if(rc < 0){
-        perror("Binding Failed for Room");
-        exit(1);
-    }
-    
-    rc = listen(room_sock, 10);
-    if(rc < 0){
-        perror("Listen Failed for Room");
-        exit(1);
-    }
-    
-    int client_sock = 0;
     struct sockaddr_in client_addr;
     int client_length = sizeof(client_addr);
     memset(&client_addr, 0, client_length);
     
     std::cout << "Made it to while loop" << std::endl;
-    while(room_data.active == true){
+    while(room_data->active == true){
         std::cout << "Inside loop" << std::endl;
         client_sock = accept(room_sock, (struct sockaddr*) &client_addr, (socklen_t*) &client_length);
-        room_data.sock = client_sock;
+        room_data->fids.push_back(client_sock);
         
         std::cout << "Accept worked" << std::endl;
         
@@ -133,6 +133,7 @@ void * client_request(void * master_sock){
                 }
                 
                 if(exists == false){
+                    
                     struct chatroom room;
                     room.num_members = 0;
                     room.active = true;
@@ -145,14 +146,44 @@ void * client_request(void * master_sock){
                         room.port = prev_room.port + 1;
                     }
                     
+                    int room_sock = socket(AF_INET, SOCK_STREAM, 0);
+                    if(room_sock < 0){
+                        perror("Could not create a socket for room\n");
+                        exit(1);
+                    }
+                    
+                    //setup room addr based on lecture slides
+                    struct sockaddr_in room_addr;
+                    memset(&room_addr, 0, sizeof(room_addr));
+                    room_addr.sin_family = AF_INET;
+                    room_addr.sin_addr.s_addr = INADDR_ANY;
+                    room_addr.sin_port = htons(room.port);
+                    
+                    int rc;
+                    rc = bind(room_sock, (struct sockaddr*)&room_addr, (socklen_t) sizeof(room_addr));
+                    if(rc < 0){
+                        perror("Binding Failed for Room");
+                        exit(1);
+                    }
+                    
+                    rc = listen(room_sock, 10);
+                    if(rc < 0){
+                        close(room_sock);
+                        perror("Listen Failed for Room");
+                        exit(1);
+                    }
+                    
                     //find the space is the request given and then save the name
                     room.name = name;
+                    room.sock = room_sock;
                     chatrooms->push_back(room);
                     
                     pthread_t room_thread;
                     pthread_attr_t room_attr;
-                    pthread_create(&room_thread, &room_attr, chat_handler, (void*) &room);
+                    printf("check\n");
+                    pthread_create(&room_thread, &room_attr, &chat_handler, (void*) &room);
                     response = "0\n";
+                    
                 }
                 else{
                     response = "1\n";
@@ -166,7 +197,9 @@ void * client_request(void * master_sock){
                 
                 bool exists = false;
                 auto del_room = chatrooms->end();
+                char del_msg[MAX_DATA] = "Warning: the chatting room is going to be closed...\n";
                 chatroom cur_room;
+                std::vector<int> fids;
                 response = "0\n";
                 //find the room with the given name
                 for(auto i = chatrooms->begin(); i != chatrooms->end(); ++i){
@@ -176,6 +209,18 @@ void * client_request(void * master_sock){
                         del_room = i;
                         cur_room.active = false;
                         exists = true;
+                        fids = i->fids;
+                        int fid;
+                        //find the room with the given name
+                        for(auto i = fids.begin(); i != fids.end(); ++i){
+                            fid = *i;
+                            if(fid != 0 && fid > 0){
+                                std::cout << "sending delete msg" << std::endl;
+                                send(fid, del_msg, MAX_DATA, 0);
+                                close(*i);
+                            }
+                        }
+                        
                         break;
                     }
                 }
@@ -211,13 +256,27 @@ void * client_request(void * master_sock){
                 else{
                     response = "2\n";
                 }
+                send(master_socket, response.c_str(), response.length(), 0);
             }
             else if(strncmp(request, "LIST", 4) == 0){
                 printf("List found in server\n");
+                
+                std::string chat_names= "";
+                chatroom cur_room;
+                
+                //create the list of all chatroom names seperated by commas
+                for(auto i = chatrooms->begin(); i != chatrooms->end(); ++i){
+                    cur_room = *i;
+                    chat_names += cur_room.name + ",";
+                }
+                
+                response = chat_names + "\n";
+                send(master_socket, response.c_str(), response.length(), 0);
             }
         }
     }
     pthread_exit(NULL);
+    close(master_socket);
 }
 
 int main(int argc, char const *argv[]){
@@ -261,6 +320,7 @@ int main(int argc, char const *argv[]){
     
     rc = listen(slave_socket, 10);
     if(rc < 0){
+        close(slave_socket);
         perror("Listen Failed");
         return -1;
     }

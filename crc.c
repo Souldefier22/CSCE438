@@ -4,8 +4,10 @@
 #include <sys/types.h>
 #include <sys/time.h>
 
+#include <arpa/inet.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <pthread.h>
 #include <string.h>
 #include "interface.h"
 
@@ -137,6 +139,7 @@ struct Reply process_command(const int sockfd, char* command)
 	
 	struct Reply response;
 	char buffer[256];
+	memset(buffer, 0, 255);
 	int data = 0;
 	int buffer_back = 0;
 	
@@ -173,7 +176,9 @@ struct Reply process_command(const int sockfd, char* command)
 	else if(strncmp(command, "JOIN", 4) == 0){
 		printf("Join found\n");
 		send(sockfd, command, strlen(command), 0);
+		printf("did send in join\n");
 		recv(sockfd, buffer, 255, 0);
+		printf("did receive in join\n");
 		char dl[] = " ";
 		
 		buffer_back = atoi(buffer);
@@ -263,6 +268,38 @@ struct Reply process_command(const int sockfd, char* command)
 	// REMOVE below code and write your own Reply.
 }
 
+void *send_message(void *thread){
+	char buffer[MAX_DATA];
+	memset(buffer, '\0', MAX_DATA);
+	int sock = *((int *)thread);
+	
+	while(1){
+		get_message(buffer, sizeof(buffer));
+		int result = send(sock, buffer, sizeof(buffer), MSG_NOSIGNAL);
+		if(strlen(buffer) == 0){
+			break;
+		}
+	}
+	close(sock);
+}
+
+void *recv_message(void *thread){
+	char buffer[MAX_DATA];
+	memset(buffer, '\0', MAX_DATA);
+	int sock = *((int *)thread);
+	
+	while(1){
+		recv(sock, buffer, sizeof(buffer), 0);
+		if(strlen(buffer) > 0){
+			display_message(buffer);
+		}
+		else if(strlen(buffer) == 0){
+			continue;
+		}
+	}
+	close(sock);
+}
+
 /* 
  * Get into the chat mode
  * 
@@ -277,7 +314,9 @@ void process_chatmode(const char* host, const int port)
 	// to the server using host and port.
 	// You may re-use the function "connect_to".
 	// ------------------------------------------------------------
-
+	
+	int sock = connect_to(host, port);
+	
 	// ------------------------------------------------------------
 	// GUIDE 2:
 	// Once the client have been connected to the server, we need
@@ -300,5 +339,26 @@ void process_chatmode(const char* host, const int port)
     //    Don't have to worry about this situation, and you can 
     //    terminate the client program by pressing CTRL-C (SIGINT)
 	// ------------------------------------------------------------
+	
+	pthread_t recv_thread;
+	pthread_t send_thread;
+	
+	int thread;
+	int check = 1;
+	
+	while(check == 1){
+		thread = pthread_create(&recv_thread, NULL, send_message, (void*)&sock);
+		if(thread != 0){
+			exit(1);
+		}
+		thread = pthread_create(&send_thread, NULL, recv_message, (void*)&sock);
+		if(thread != 0){
+			exit(1);
+		}
+		
+		pthread_join(send_thread, NULL);
+		pthread_join(recv_thread, NULL);
+		check = 0;
+	}
 }
 
