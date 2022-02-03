@@ -139,14 +139,13 @@ struct Reply process_command(const int sockfd, char* command)
 	
 	struct Reply response;
 	char buffer[256];
-	memset(buffer, 0, 255);
+	memset(buffer, 0, 256);
 	int data = 0;
 	int buffer_back = 0;
 	
 	if(strncmp(command, "CREATE", 6) == 0){
-		printf("Create found\n");
 		send(sockfd, command, strlen(command), 0);
-		recv(sockfd, buffer, 255, 0);
+		recv(sockfd, buffer, 256, 0);
 		
 		buffer_back = atoi(buffer);
 		if(buffer_back == 0){
@@ -159,7 +158,6 @@ struct Reply process_command(const int sockfd, char* command)
 		return response;
 	}
 	else if(strncmp(command, "DELETE", 6) == 0){
-		printf("Delete found\n");
 		send(sockfd, command, strlen(command), 0);
 		recv(sockfd, buffer, 255, 0);
 		
@@ -174,11 +172,8 @@ struct Reply process_command(const int sockfd, char* command)
 		return response;
 	}
 	else if(strncmp(command, "JOIN", 4) == 0){
-		printf("Join found\n");
 		send(sockfd, command, strlen(command), 0);
-		printf("did send in join\n");
 		recv(sockfd, buffer, 255, 0);
-		printf("did receive in join\n");
 		char dl[] = " ";
 		
 		buffer_back = atoi(buffer);
@@ -203,7 +198,6 @@ struct Reply process_command(const int sockfd, char* command)
 		return response;
 	}
 	else if(strncmp(command, "LIST", 4) == 0){
-		printf("List found\n");
 		send(sockfd, command, strlen(command), 0);
 		recv(sockfd, buffer, 255, 0);
 		

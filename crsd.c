@@ -27,7 +27,6 @@ struct chatroom{
 };
 
 void * chatting(void * input){
-    std::cout << "Made it to chatting" << std::endl;
     
     chatroom * room = (chatroom *) input;
     std::vector<int> fids = room->fids;
@@ -44,7 +43,6 @@ void * chatting(void * input){
                 fid = *i;
                 //send msg to all members except person closing
                 if(fid != sock && fid > 0){
-                    std::cout << "sending msg" << std::endl;
                     send(fid, message, MAX_DATA, 0);
                 }
             }
@@ -53,11 +51,9 @@ void * chatting(void * input){
 }
 
 void * chat_handler(void * input){
-    printf("Made it to chat_handler\n");
     
     chatroom * room_data = (chatroom*)input;
     int port = room_data->port;
-    int rc;
     
     //make a socket for the room
     int room_sock = room_data->sock;
@@ -67,13 +63,9 @@ void * chat_handler(void * input){
     int client_length = sizeof(client_addr);
     memset(&client_addr, 0, client_length);
     
-    std::cout << "Made it to while loop" << std::endl;
     while(room_data->active == true){
-        std::cout << "Inside loop" << std::endl;
         client_sock = accept(room_sock, (struct sockaddr*) &client_addr, (socklen_t*) &client_length);
         room_data->fids.push_back(client_sock);
-        
-        std::cout << "Accept worked" << std::endl;
         
         if(client_sock < 0){
             perror("Accept in Room Failed");
@@ -83,7 +75,6 @@ void * chat_handler(void * input){
         pthread_t t_thread;
         pthread_attr_t t_attr;
         pthread_create(&t_thread, &t_attr, chatting, (void*) input);
-        std::cout << "Made thread for chatting" << std::endl;
     }
     
     close(client_sock);
@@ -93,7 +84,6 @@ void * chat_handler(void * input){
 //what to do for different requests given by client
 void * client_request(void * master_sock){
     int master_socket = *(int *) master_sock;
-    printf("Made it to client_request\n");
     
     
     char request[256];
@@ -115,10 +105,8 @@ void * client_request(void * master_sock){
                     name += request[i];
                 }
             }
-            std::cout << "Name of room is: " << name << std::endl;
             
             if(strncmp(request, "CREATE", 6) == 0){
-                printf("Create found in server\n");
                 
                 bool exists = false;
                 chatroom cur_room;
@@ -180,7 +168,6 @@ void * client_request(void * master_sock){
                     
                     pthread_t room_thread;
                     pthread_attr_t room_attr;
-                    printf("check\n");
                     pthread_create(&room_thread, &room_attr, &chat_handler, (void*) &room);
                     response = "0\n";
                     
@@ -193,7 +180,6 @@ void * client_request(void * master_sock){
                 
             }
             else if(strncmp(request, "DELETE", 6) == 0){
-                printf("Delete found in server\n");
                 
                 bool exists = false;
                 auto del_room = chatrooms->end();
@@ -205,7 +191,6 @@ void * client_request(void * master_sock){
                 for(auto i = chatrooms->begin(); i != chatrooms->end(); ++i){
                     cur_room = *i;
                     if(cur_room.name == name){
-                        std::cout << "Found room with name for delete" << std::endl;
                         del_room = i;
                         cur_room.active = false;
                         exists = true;
@@ -215,7 +200,6 @@ void * client_request(void * master_sock){
                         for(auto i = fids.begin(); i != fids.end(); ++i){
                             fid = *i;
                             if(fid != 0 && fid > 0){
-                                std::cout << "sending delete msg" << std::endl;
                                 send(fid, del_msg, MAX_DATA, 0);
                                 close(*i);
                             }
@@ -234,7 +218,6 @@ void * client_request(void * master_sock){
                 send(master_socket, response.c_str(), response.length(), 0);
             }
             else if(strncmp(request, "JOIN", 4) == 0){
-                printf("Join found in server\n");
                 
                 int new_port = -1;
                 chatroom cur_room;
@@ -259,7 +242,6 @@ void * client_request(void * master_sock){
                 send(master_socket, response.c_str(), response.length(), 0);
             }
             else if(strncmp(request, "LIST", 4) == 0){
-                printf("List found in server\n");
                 
                 std::string chat_names= "";
                 chatroom cur_room;
@@ -280,7 +262,6 @@ void * client_request(void * master_sock){
 }
 
 int main(int argc, char const *argv[]){
-    printf("Beginning the main\n");
     //get preliminary information such as port number or name
     int slave_socket; //server
     int master_socket; //client
@@ -301,8 +282,6 @@ int main(int argc, char const *argv[]){
         return -1;
     }
     
-    printf("Socket has been created\n");
-    
     //associate port with socket
     server.sin_family = AF_INET;
     server.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -316,16 +295,12 @@ int main(int argc, char const *argv[]){
         return -1;
     }
     
-    printf("Socket is binded\n");
-    
     rc = listen(slave_socket, 10);
     if(rc < 0){
         close(slave_socket);
         perror("Listen Failed");
         return -1;
     }
-    
-    printf("Socket is listening\n");
     
     struct sockaddr_in master_data;
     int info_length = sizeof(master_data);
@@ -338,7 +313,6 @@ int main(int argc, char const *argv[]){
         pthread_t cur_thread;
         
         if(pthread_create(&cur_thread, NULL, &client_request, (void*) &master_socket) != 0) {
-            printf("Thread creation failed\n");
             break;
         }
     }
