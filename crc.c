@@ -5,6 +5,7 @@
 #include <sys/time.h>
 
 #include <arpa/inet.h>
+#include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
@@ -337,21 +338,17 @@ void process_chatmode(const char* host, const int port)
 	pthread_t send_thread;
 	
 	int thread;
-	int check = 1;
 	
-	while(check == 1){
-		thread = pthread_create(&recv_thread, NULL, send_message, (void*)&sock);
-		if(thread != 0){
-			exit(1);
-		}
-		thread = pthread_create(&send_thread, NULL, recv_message, (void*)&sock);
-		if(thread != 0){
-			exit(1);
-		}
-		
-		pthread_join(send_thread, NULL);
-		pthread_join(recv_thread, NULL);
-		check = 0;
+	thread = pthread_create(&send_thread, NULL, send_message, (void*)&sock);
+	if(thread != 0){
+		exit(1);
 	}
+	thread = pthread_create(&recv_thread, NULL, recv_message, (void*)&sock);
+	if(thread != 0){
+		exit(1);
+	}
+	
+	pthread_join(send_thread, NULL);
+	pthread_join(recv_thread, NULL);
 }
 

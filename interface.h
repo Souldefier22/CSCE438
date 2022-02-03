@@ -117,7 +117,7 @@ void get_command(char* comm, const int size)
 void get_message(char* message, const int size)
 {
     fgets(message, size, stdin);
-    message[strlen(message) - 1] = '\0';
+    message[strlen(message) - 1] = '\n';
 }
 
 

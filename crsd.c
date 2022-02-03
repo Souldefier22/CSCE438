@@ -20,6 +20,7 @@ struct chatroom{
     int num_members;
     int sock;
     int port;
+    int extra_sock;
     std::vector<int> fids;
     std::string name;
     bool active = false;
@@ -27,20 +28,20 @@ struct chatroom{
 };
 
 void * chatting(void * input){
-    
     chatroom * room = (chatroom *) input;
-    std::vector<int> fids = room->fids;
-    int sock = room->sock;
+    int sock = room->extra_sock;
     char message[MAX_DATA];
     
     while(1){
-        memset(message, 0, MAX_DATA);
+        memset(message, '\0', MAX_DATA);
         int response = recv(sock, message, MAX_DATA, 0);
+        std::cout << "message: " << message << std::endl;
         if(response > 0){
             int fid;
             //find the room with the given name
-            for(auto i = fids.begin(); i != fids.end(); ++i){
+            for(auto i = room->fids.begin(); i != room->fids.end(); ++i){
                 fid = *i;
+                std::cout << "the fid is: " << fid << std::endl;
                 //send msg to all members except person closing
                 if(fid != sock && fid > 0){
                     send(fid, message, MAX_DATA, 0);
@@ -51,6 +52,7 @@ void * chatting(void * input){
 }
 
 void * chat_handler(void * input){
+    std::cout << "Handler" << std::endl;
     
     chatroom * room_data = (chatroom*)input;
     int port = room_data->port;
@@ -65,7 +67,9 @@ void * chat_handler(void * input){
     
     while(room_data->active == true){
         client_sock = accept(room_sock, (struct sockaddr*) &client_addr, (socklen_t*) &client_length);
+        std::cout << "past accept" << std::endl;
         room_data->fids.push_back(client_sock);
+        room_data->extra_sock = client_sock;
         
         if(client_sock < 0){
             perror("Accept in Room Failed");
@@ -73,8 +77,7 @@ void * chat_handler(void * input){
         }
         
         pthread_t t_thread;
-        pthread_attr_t t_attr;
-        pthread_create(&t_thread, &t_attr, chatting, (void*) input);
+        pthread_create(&t_thread, NULL, chatting, (void*) input);
     }
     
     close(client_sock);
@@ -166,8 +169,8 @@ void * client_request(void * master_sock){
                     chatrooms->push_back(room);
                     
                     pthread_t room_thread;
-                    pthread_attr_t room_attr;
-                    pthread_create(&room_thread, &room_attr, &chat_handler, (void*) &room);
+                    std::cout << "break" << std::endl;
+                    pthread_create(&room_thread, NULL, &chat_handler, (void*) &room);
                     response = "0\n";
                     
                 }
@@ -193,14 +196,13 @@ void * client_request(void * master_sock){
                         del_room = i;
                         cur_room.active = false;
                         exists = true;
-                        fids = i->fids;
                         int fid;
                         //find the room with the given name
-                        for(auto i = fids.begin(); i != fids.end(); ++i){
-                            fid = *i;
+                        for(auto j = i->fids.begin(); j != i->fids.end(); ++j){
+                            fid = *j;
                             if(fid != 0 && fid > 0){
                                 send(fid, del_msg, MAX_DATA, 0);
-                                close(*i);
+                                close(*j);
                             }
                         }
                         
@@ -256,8 +258,8 @@ void * client_request(void * master_sock){
             }
         }
     }
-    pthread_exit(NULL);
     close(master_socket);
+    pthread_exit(NULL);
 }
 
 int main(int argc, char const *argv[]){
