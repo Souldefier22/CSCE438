@@ -34,7 +34,6 @@ int main(int argc, char** argv)
     display_title();
     
 	while (1) {
-	
 		int sockfd = connect_to(argv[1], atoi(argv[2]));
     
 		char command[MAX_DATA];

@@ -85,7 +85,6 @@ void * chat_handler(void * input){
 void * client_request(void * master_sock){
     int master_socket = *(int *) master_sock;
     
-    
     char request[256];
     int data_rec = 0;
     std::string name;
@@ -298,7 +297,7 @@ int main(int argc, char const *argv[]){
     rc = listen(slave_socket, 10);
     if(rc < 0){
         close(slave_socket);
-        perror("Listen Failed");
+        perror("Listen failed");
         return -1;
     }
     
