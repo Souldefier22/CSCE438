@@ -35,13 +35,11 @@ void * chatting(void * input){
     while(1){
         memset(message, '\0', MAX_DATA);
         int response = recv(sock, message, MAX_DATA, 0);
-        std::cout << "message: " << message << std::endl;
         if(response > 0){
             int fid;
             //find the room with the given name
             for(auto i = room->fids.begin(); i != room->fids.end(); ++i){
                 fid = *i;
-                std::cout << "the fid is: " << fid << std::endl;
                 //send msg to all members except person closing
                 if(fid != sock && fid > 0){
                     send(fid, message, MAX_DATA, 0);
@@ -52,8 +50,6 @@ void * chatting(void * input){
 }
 
 void * chat_handler(void * input){
-    std::cout << "Handler" << std::endl;
-    
     chatroom * room_data = (chatroom*)input;
     int port = room_data->port;
     
@@ -67,7 +63,6 @@ void * chat_handler(void * input){
     
     while(room_data->active == true){
         client_sock = accept(room_sock, (struct sockaddr*) &client_addr, (socklen_t*) &client_length);
-        std::cout << "past accept" << std::endl;
         room_data->fids.push_back(client_sock);
         room_data->extra_sock = client_sock;
         
@@ -169,7 +164,6 @@ void * client_request(void * master_sock){
                     chatrooms->push_back(room);
                     
                     pthread_t room_thread;
-                    std::cout << "break" << std::endl;
                     pthread_create(&room_thread, NULL, &chat_handler, (void*) &room);
                     response = "0\n";
                     
@@ -187,7 +181,6 @@ void * client_request(void * master_sock){
                 auto del_room = chatrooms->end();
                 char del_msg[MAX_DATA] = "Warning: the chatting room is going to be closed...\n";
                 chatroom cur_room;
-                std::vector<int> fids;
                 response = "0\n";
                 //find the room with the given name
                 for(auto i = chatrooms->begin(); i != chatrooms->end(); ++i){
