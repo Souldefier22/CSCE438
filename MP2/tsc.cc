@@ -1,8 +1,15 @@
 #include <iostream>
 #include <string>
 #include <unistd.h>
+#include <memory>
+#include <thread>
 #include <grpc++/grpc++.h>
 #include "client.h"
+#include "sns.grpc.pb.h"
+
+using csce438::SNSService;
+using csce438::Request;
+using csce438::Reply;
 
 class Client : public IClient
 {
@@ -23,7 +30,7 @@ class Client : public IClient
         
         // You can have an instance of the client stub
         // as a member variable.
-        //std::unique_ptr<NameOfYourStubClass::Stub> stub_;
+        std::unique_ptr<SNSService::Stub> stub_;
 };
 
 int main(int argc, char** argv) {
@@ -63,6 +70,8 @@ int Client::connectTo()
     // a member variable in your own Client class.
     // Please refer to gRpc tutorial how to create a stub.
 	// ------------------------------------------------------------
+	
+	stub_ = std::unique_ptr<SNSService::Stub>(SNSService::NewStub(grpc::CreateChannel(hostname + ":" + port, grpc::InsecureChannelCredentials())));
 
     return 1; // return 1 if success, otherwise return -1
 }
@@ -115,6 +124,27 @@ IReply Client::processCommand(std::string& input)
     // ------------------------------------------------------------
     
     IReply ire;
+    char cinput[input.length() + 1];
+    strcpy(cinput, input.c_str());
+    if(strncmp(cinput, "FOLLOW", 6) == 0){
+		Request new_req;
+		new_req.set_username(username);
+		std::string user_arg = input.substr(7, input.length()-6); 
+		new_req.add_arguments(user_arg);
+	}
+	else if(strncmp(cinput, "UNFOLLOW", 8) == 0){
+		
+	}
+	else if(strncmp(cinput, "LIST", 4) == 0){
+		
+	}
+	else if(strncmp(cinput, "TIMELINE", 8) == 0){
+		
+	}
+	else{
+		return ire;
+	}
+    
     return ire;
 }
 
