@@ -7,6 +7,8 @@
 #include "client.h"
 #include "sns.grpc.pb.h"
 
+using grpc::ClientContext;
+using grpc::Status;
 using csce438::SNSService;
 using csce438::Request;
 using csce438::Reply;
@@ -124,25 +126,32 @@ IReply Client::processCommand(std::string& input)
     // ------------------------------------------------------------
     
     IReply ire;
+    Request new_req;
+    Reply rep;
+    ClientContext context;
     char cinput[input.length() + 1];
     strcpy(cinput, input.c_str());
-    if(strncmp(cinput, "FOLLOW", 6) == 0){
-		Request new_req;
+    if(strncmp(cinput, "UNFOLLOW", 8) == 0){
+		new_req.set_username(username);
+		std::string user_arg = input.substr(9, input.length()-8); 
+		new_req.add_arguments(user_arg);
+		
+		Status rec_status = _stub->UnFollow(&context, new_req, &rep);
+		ire.grpc_status = rec_status;
+	}
+    else if(strncmp(cinput, "FOLLOW", 6) == 0){
 		new_req.set_username(username);
 		std::string user_arg = input.substr(7, input.length()-6); 
 		new_req.add_arguments(user_arg);
-	}
-	else if(strncmp(cinput, "UNFOLLOW", 8) == 0){
 		
+		Status rec_status = _stub->Follow(&context, new_req, &rep);
+		ire.grpc_status = rec_status;
 	}
 	else if(strncmp(cinput, "LIST", 4) == 0){
 		
 	}
 	else if(strncmp(cinput, "TIMELINE", 8) == 0){
 		
-	}
-	else{
-		return ire;
 	}
     
     return ire;
