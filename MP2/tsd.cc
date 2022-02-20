@@ -83,6 +83,19 @@ void RunServer(std::string port_no) {
   // which would start the server, make it listen on a particular
   // port number.
   // ------------------------------------------------------------
+  
+  std::string server_addr("0.0.0.0:");
+  server_addr = server_addr + port_no;
+  SNSServiceImpl service;
+  
+  //build and start the server
+  ServerBuilder builder;
+  builder.AddListeningPort(server_addr, grpc::InsecureServerCredentials());
+  builder.RegisterService(&service);
+  
+  std::unique_ptr<Server> server(builder.BuildAndStart());
+  std::cout << "The server is now listening on: " << server_addr << std::endl;
+  server->Wait();
 }
 
 int main(int argc, char** argv) {

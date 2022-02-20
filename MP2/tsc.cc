@@ -136,7 +136,7 @@ IReply Client::processCommand(std::string& input)
 		std::string user_arg = input.substr(9, input.length()-8); 
 		new_req.add_arguments(user_arg);
 		
-		Status rec_status = _stub->UnFollow(&context, new_req, &rep);
+		Status rec_status = stub_->UnFollow(&context, new_req, &rep);
 		ire.grpc_status = rec_status;
 	}
     else if(strncmp(cinput, "FOLLOW", 6) == 0){
@@ -144,7 +144,7 @@ IReply Client::processCommand(std::string& input)
 		std::string user_arg = input.substr(7, input.length()-6); 
 		new_req.add_arguments(user_arg);
 		
-		Status rec_status = _stub->Follow(&context, new_req, &rep);
+		Status rec_status = stub_->Follow(&context, new_req, &rep);
 		ire.grpc_status = rec_status;
 	}
 	else if(strncmp(cinput, "LIST", 4) == 0){
