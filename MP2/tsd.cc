@@ -7,6 +7,7 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <vector>
 #include <stdlib.h>
 #include <unistd.h>
 #include <google/protobuf/util/time_util.h>
@@ -27,6 +28,14 @@ using csce438::Message;
 using csce438::Request;
 using csce438::Reply;
 using csce438::SNSService;
+
+std::vector<struct user>* users = new std::vector<struct user>;
+
+struct user{
+    std::string username;
+    std::vector<std::string> followers;
+    std::vector<std::string> following;
+};
 
 class SNSServiceImpl final : public SNSService::Service {
   
@@ -63,7 +72,33 @@ class SNSServiceImpl final : public SNSService::Service {
     // a new user and verify if the username is available
     // or already taken
     // ------------------------------------------------------------
-    return Status::OK;
+    std::string name = request->username();
+    
+    user cur_user;
+    bool used = false;
+    //check if name already exists
+    if(users->empty() != true){
+      for(auto i = users->begin(); i != users->end(); ++i){
+          cur_user = *i;
+          if(cur_user.username == name){
+              used = true;
+              break;
+          }
+      }
+    }
+    
+    if(used == false){
+      struct user new_user;
+      new_user.username = name;
+      
+      users->push_back(new_user);
+      reply->set_msg("Successful Login");
+      return Status::OK;
+    }
+    else{
+      reply->set_msg("Username is invalid");
+      return Status::OK;
+    }
   }
 
   Status Timeline(ServerContext* context, ServerReaderWriter<Message, Message>* stream) override {

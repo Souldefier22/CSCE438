@@ -74,7 +74,29 @@ int Client::connectTo()
 	// ------------------------------------------------------------
 	
 	stub_ = std::unique_ptr<SNSService::Stub>(SNSService::NewStub(grpc::CreateChannel(hostname + ":" + port, grpc::InsecureChannelCredentials())));
-
+    
+    IReply ire;
+    Request new_req;
+    new_req.set_username(username);
+    
+    Reply rep;
+    ClientContext context;
+    
+    Status rec_status = stub_->Login(&context, new_req, &rep);
+    ire.grpc_status = rec_status;
+    
+    if(rep.msg() == "Username is invalid"){
+        ire.comm_status = FAILURE_ALREADY_EXISTS;
+    }
+    else{
+        ire.comm_status = SUCCESS;
+    }
+    
+    if(ire.grpc_status.ok() == false){
+        std::cout << "The login failed" << std::endl;
+        return -1;
+    }
+    
     return 1; // return 1 if success, otherwise return -1
 }
 
@@ -132,6 +154,7 @@ IReply Client::processCommand(std::string& input)
     char cinput[input.length() + 1];
     strcpy(cinput, input.c_str());
     if(strncmp(cinput, "UNFOLLOW", 8) == 0){
+        std::cout << "Unfollow found" << std::endl;
 		new_req.set_username(username);
 		std::string user_arg = input.substr(9, input.length()-8); 
 		new_req.add_arguments(user_arg);
@@ -140,6 +163,7 @@ IReply Client::processCommand(std::string& input)
 		ire.grpc_status = rec_status;
 	}
     else if(strncmp(cinput, "FOLLOW", 6) == 0){
+        std::cout << "Follow found" << std::endl;
 		new_req.set_username(username);
 		std::string user_arg = input.substr(7, input.length()-6); 
 		new_req.add_arguments(user_arg);
