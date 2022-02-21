@@ -45,6 +45,25 @@ class SNSServiceImpl final : public SNSService::Service {
     // LIST request from the user. Ensure that both the fields
     // all_users & following_users are populated
     // ------------------------------------------------------------
+    std::string name = request->username();
+    
+    user cur_user;
+    if(users->empty() != true){
+      //add the users
+      for(auto i = users->begin(); i != users->end(); ++i){
+          cur_user = *i;
+          reply->add_all_users(cur_user.username);
+          std::cout << cur_user.username << std::endl;
+          
+          //add the followers for that username
+          std::vector<std::string>::const_iterator it;
+          if(cur_user.username == name && !cur_user.followers.empty()){
+            for(it = cur_user.followers.begin(); it != cur_user.followers.end(); it++){
+              reply->add_following_users(*it);
+            }
+          }
+      }
+    }
     return Status::OK;
   }
 
@@ -119,7 +138,7 @@ void RunServer(std::string port_no) {
   // port number.
   // ------------------------------------------------------------
   
-  std::string server_addr("0.0.0.0:");
+  std::string server_addr("127.0.0.1:");
   server_addr = server_addr + port_no;
   SNSServiceImpl service;
   

@@ -172,7 +172,14 @@ IReply Client::processCommand(std::string& input)
 		ire.grpc_status = rec_status;
 	}
 	else if(strncmp(cinput, "LIST", 4) == 0){
+	    std::cout << "List found" << std::endl;
+		new_req.set_username(username);
 		
+		Status rec_status = stub_->List(&context, new_req, &rep);
+		ire.grpc_status = rec_status;
+		if(rec_status.ok() == true){
+		    ire.comm_status = SUCCESS;
+		}
 	}
 	else if(strncmp(cinput, "TIMELINE", 8) == 0){
 		
