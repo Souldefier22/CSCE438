@@ -87,6 +87,8 @@ int Client::connectTo()
     
     if(rep.msg() == "Username is invalid"){
         ire.comm_status = FAILURE_ALREADY_EXISTS;
+        std::cout << "Bad username" << std::endl;
+        return -1;
     }
     else{
         ire.comm_status = SUCCESS;
@@ -179,6 +181,13 @@ IReply Client::processCommand(std::string& input)
 		ire.grpc_status = rec_status;
 		if(rec_status.ok() == true){
 		    ire.comm_status = SUCCESS;
+		    
+		    for(std::string u : rep.all_users()){
+		        ire.all_users.push_back(u);
+		    }
+		    for(std::string u : rep.following_users()){
+		        ire.following_users.push_back(u);
+		    }
 		}
 	}
 	else if(strncmp(cinput, "TIMELINE", 8) == 0){
