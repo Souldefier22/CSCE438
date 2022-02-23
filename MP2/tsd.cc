@@ -109,8 +109,9 @@ class SNSServiceImpl final : public SNSService::Service {
         if(cur_user.username == name && already_follow == false){
           //check if the current user is already following the input username
           std::cout << "before the find" << std::endl;
-          if(std::find(cur_user.following.begin(), cur_user.following.end(), name) == cur_user.following.end()){
+          if(std::find(cur_user.following.begin(), cur_user.following.end(), follow) == cur_user.following.end()){
             i->following.push_back(follow);
+            std::cout << "added to following" << std::endl;
           }
           else{
             already_follow = true;
@@ -125,6 +126,7 @@ class SNSServiceImpl final : public SNSService::Service {
     
     if(exists == false){
       user cur_user2;
+      std::cout << "fixing mistake" << std::endl;
       //make sure the bad username isn't included as someone being followed
       if(users->empty() != true){
         for(auto i = users->begin(); i != users->end(); ++i){
@@ -157,7 +159,64 @@ class SNSServiceImpl final : public SNSService::Service {
     // request from a user to unfollow one of his/her existing
     // followers
     // ------------------------------------------------------------
-    return Status::OK;
+    std::string name = request->username();
+    std::string unfollow = request->arguments(0);
+    
+    if(name == unfollow){
+      reply->set_msg("Username is invalid");
+      return Status::OK;
+    }
+    
+    std::cout << "the unfollow is: " << unfollow << std::endl;
+    
+    user cur_user;
+    bool exists = false;
+    //check if name already exists
+    if(users->empty() != true){
+      for(auto i = users->begin(); i != users->end(); ++i){
+        cur_user = *i;
+        //find the username to follow
+        if(cur_user.username == unfollow){
+          exists = true;
+          //check if the input username is already being followed by current user
+          if(std::find(cur_user.followers.begin(), cur_user.followers.end(), name) != cur_user.followers.end()){
+            i->followers.erase(std::find(i->followers.begin(), i->followers.end(), name));
+            std::cout << "removed from followers" << std::endl;
+          }
+          else{
+            break;
+          }
+        }
+        
+        //find the current user
+        if(cur_user.username == name){
+          //check if the current user is already following the input username
+          std::cout << "before the find" << std::endl;
+          if(std::find(cur_user.following.begin(), cur_user.following.end(), unfollow) != cur_user.following.end()){
+            std::cout << "before the erase" << std::endl;
+            i->following.erase(std::find(i->following.begin(), i->following.end(), unfollow));
+            std::cout << "after the erase" << std::endl;
+          }
+          else{
+            break;
+          }
+          std::cout << "after the find in unfollow" << std::endl;
+        }
+      }
+    }
+    
+    
+    
+    if(exists == false){
+      reply->set_msg("Username is invalid");
+      return Status::OK;
+    }
+    else{
+      reply->set_msg("Success");
+      return Status::OK;
+    }
+    
+    return Status::OK; 
   }
   
   Status Login(ServerContext* context, const Request* request, Reply* reply) override {

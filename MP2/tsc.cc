@@ -163,6 +163,16 @@ IReply Client::processCommand(std::string& input)
 		
 		Status rec_status = stub_->UnFollow(&context, new_req, &rep);
 		ire.grpc_status = rec_status;
+		
+		if(rep.msg() == "Username is invalid"){
+		    ire.comm_status = FAILURE_INVALID_USERNAME;
+		}
+		else if(rep.msg() == "Success"){
+		    ire.comm_status = SUCCESS;
+		}
+		else{
+		    ire.comm_status = FAILURE_UNKNOWN;
+		}
 	}
     else if(strncmp(cinput, "FOLLOW", 6) == 0){
         std::cout << "Follow found" << std::endl;
@@ -183,7 +193,7 @@ IReply Client::processCommand(std::string& input)
 		    ire.comm_status = SUCCESS;
 		}
 		else{
-		    ire.comm_status = FAILURE_INVALID;
+		    ire.comm_status = FAILURE_UNKNOWN;
 		}
 	}
 	else if(strncmp(cinput, "LIST", 4) == 0){
@@ -211,7 +221,7 @@ IReply Client::processCommand(std::string& input)
         return ire;
     }
     else{
-        ire.comm_status = FAILURE_INVALID;
+        ire.comm_status = FAILURE_UNKNOWN;
         return ire;
     }
 }
