@@ -53,13 +53,13 @@ class SNSServiceImpl final : public SNSService::Service {
       for(auto i = users->begin(); i != users->end(); ++i){
           cur_user = *i;
           reply->add_all_users(cur_user.username);
-          std::cout << cur_user.username << std::endl;
           
           //add the followers for that username
           std::vector<std::string>::const_iterator it;
           if(cur_user.username == name && !cur_user.followers.empty()){
             for(it = cur_user.followers.begin(); it != cur_user.followers.end(); it++){
               reply->add_following_users(*it);
+              std::cout << "following user is: " << *it << std::endl;
             }
           }
       }
@@ -73,6 +73,81 @@ class SNSServiceImpl final : public SNSService::Service {
     // request from a user to follow one of the existing
     // users
     // ------------------------------------------------------------
+    
+    std::string name = request->username();
+    std::string follow = request->arguments(0);
+    
+    if(name == follow){
+      reply->set_msg("Username is invalid");
+      return Status::OK;
+    }
+    
+    std::cout << "the follow is: " << follow << std::endl;
+    
+    user cur_user;
+    bool exists = false;
+    bool already_follow = false;
+    //check if name already exists
+    if(users->empty() != true){
+      for(auto i = users->begin(); i != users->end(); ++i){
+        cur_user = *i;
+        //find the username to follow
+        if(cur_user.username == follow && already_follow == false){
+          exists = true;
+          //check if the input username is already being followed by current user
+          if(std::find(cur_user.followers.begin(), cur_user.followers.end(), name) == cur_user.followers.end()){
+            i->followers.push_back(name);
+            std::cout << "added to followers" << std::endl;
+          }
+          else{
+            already_follow = true;
+            break;
+          }
+        }
+        
+        //find the current user
+        if(cur_user.username == name && already_follow == false){
+          //check if the current user is already following the input username
+          std::cout << "before the find" << std::endl;
+          if(std::find(cur_user.following.begin(), cur_user.following.end(), name) == cur_user.following.end()){
+            i->following.push_back(follow);
+          }
+          else{
+            already_follow = true;
+            break;
+          }
+          std::cout << "after the find" << std::endl;
+        }
+      }
+    }
+    
+    
+    
+    if(exists == false){
+      user cur_user2;
+      //make sure the bad username isn't included as someone being followed
+      if(users->empty() != true){
+        for(auto i = users->begin(); i != users->end(); ++i){
+          cur_user2 = *i;
+          if(cur_user2.username == name){
+            i->following.pop_back();
+            break;
+         }
+        }
+      }
+      
+      reply->set_msg("Username is invalid");
+      return Status::OK;
+    }
+    else if(already_follow == true){
+      reply->set_msg("Already following");
+      return Status::OK;
+    }
+    else{
+      reply->set_msg("Success");
+      return Status::OK;
+    }
+    
     return Status::OK; 
   }
 

@@ -172,6 +172,19 @@ IReply Client::processCommand(std::string& input)
 		
 		Status rec_status = stub_->Follow(&context, new_req, &rep);
 		ire.grpc_status = rec_status;
+		
+		if(rep.msg() == "Username is invalid"){
+		    ire.comm_status = FAILURE_INVALID_USERNAME;
+		}
+		else if(rep.msg() == "Already following"){
+		    ire.comm_status = FAILURE_ALREADY_EXISTS;
+		}
+		else if(rep.msg() == "Success"){
+		    ire.comm_status = SUCCESS;
+		}
+		else{
+		    ire.comm_status = FAILURE_INVALID;
+		}
 	}
 	else if(strncmp(cinput, "LIST", 4) == 0){
 	    std::cout << "List found" << std::endl;
