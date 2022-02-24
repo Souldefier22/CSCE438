@@ -12,6 +12,7 @@ using grpc::Status;
 using csce438::SNSService;
 using csce438::Request;
 using csce438::Reply;
+using csce438::Message;
 
 class Client : public IClient
 {
@@ -214,7 +215,7 @@ IReply Client::processCommand(std::string& input)
 		}
 	}
 	else if(strncmp(cinput, "TIMELINE", 8) == 0){
-		
+		ire.comm_status = SUCCESS;
 	}
     
     if(ire.comm_status == SUCCESS){
@@ -244,4 +245,29 @@ void Client::processTimeline()
     // and you can terminate the client program by pressing
     // CTRL-C (SIGINT)
 	// ------------------------------------------------------------
+	
+	while(true){
+    	ClientContext context;
+    	std::shared_ptr<ClientReaderWriter<Message, Message>> thread_client = stub_->Timeline(&context);
+    	
+    	std::thread writer([username, thread_client](){
+    	    //initial message to connect
+    	    Message m;
+    	    m.set_username(username);
+    	    m.set_msg("connect");
+    	    thread_client->Write(m);
+    	    
+    	    std::string input;
+    	    while(1){
+    	        std::getline(std::cin, input);
+    	        m.set_username = username;
+    	        m.set_msg(input);
+    	        if(thread_client->Write(m) == false){
+    	            break;
+    	        }
+    	    }
+    	    
+    	    thread_client->WritesDone();
+    	});
+	}
 }
