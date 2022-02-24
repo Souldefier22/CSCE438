@@ -4,15 +4,18 @@
 #include <memory>
 #include <thread>
 #include <grpc++/grpc++.h>
+#include <google/protobuf/util/time_util.h>
 #include "client.h"
 #include "sns.grpc.pb.h"
 
 using grpc::ClientContext;
 using grpc::Status;
+using grpc::ClientReaderWriter;
 using csce438::SNSService;
 using csce438::Request;
 using csce438::Reply;
 using csce438::Message;
+using google::protobuf::Timestamp;
 
 class Client : public IClient
 {
@@ -249,18 +252,19 @@ void Client::processTimeline()
 	while(true){
     	ClientContext context;
     	std::shared_ptr<ClientReaderWriter<Message, Message>> thread_client = stub_->Timeline(&context);
+    	std::string username1 = username;
     	
-    	std::thread writer([username, thread_client](){
+    	std::thread writer([username1, thread_client](){
     	    //initial message to connect
     	    Message m;
-    	    m.set_username(username);
+    	    m.set_username(username1);
     	    m.set_msg("connect");
     	    thread_client->Write(m);
     	    
     	    std::string input;
     	    while(1){
-    	        std::getline(std::cin, input);
-    	        m.set_username = username;
+    	        input = getPostMessage();
+    	        m.set_username(username1);
     	        m.set_msg(input);
     	        if(thread_client->Write(m) == false){
     	            break;
@@ -269,5 +273,16 @@ void Client::processTimeline()
     	    
     	    thread_client->WritesDone();
     	});
+    	
+    	std::thread reader([&](){
+    	    Message m;
+    	    while(thread_client->Read(&m)){
+    	        time_t post_time = google::protobuf::util::TimeUtil::TimestampToTimeT(m.timestamp());
+    	        displayPostMessage(m.username(), m.msg(), post_time);
+    	    }
+    	});
+    	
+    	reader.join();
+    	writer.join();
 	}
 }
