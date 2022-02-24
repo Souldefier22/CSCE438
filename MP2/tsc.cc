@@ -284,5 +284,7 @@ void Client::processTimeline()
     	
     	reader.join();
     	writer.join();
+    	
+    	std::cout << "Threads are joined" << std::endl;
 	}
 }
