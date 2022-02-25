@@ -243,45 +243,52 @@ void Client::processTimeline()
     // CTRL-C (SIGINT)
 	// ------------------------------------------------------------
 	
-	while(true){
-    	ClientContext context;
-    	std::shared_ptr<ClientReaderWriter<Message, Message>> thread_client = stub_->Timeline(&context);
-    	std::string username1 = username;
-    	
-    	std::thread writer([username1, thread_client](){
-    	    //initial message to connect
-    	    Message m;
-    	    m.set_username(username1);
-    	    m.set_msg("Now you are in the timeline");
-    	    thread_client->Write(m);
-    	    
-    	    std::string input;
-    	    Timestamp post_time = Timestamp();
-    	    post_time = google::protobuf::util::TimeUtil::GetCurrentTime();
-    	    while(1){
-    	        input = getPostMessage();
-    	        m.set_username(username1);
-    	        m.set_msg(input);
-    	        m.set_allocated_timestamp(&post_time);
-    	        if(thread_client->Write(m) == false){
-    	            break;
-    	        }
-    	    }
-    	    
-    	    thread_client->WritesDone();
-    	});
-    	
-    	std::thread reader([&](){
-    	    Message m;
-    	    while(thread_client->Read(&m)){
+	ClientContext context;
+	std::shared_ptr<ClientReaderWriter<Message, Message>> thread_client = stub_->Timeline(&context);
+	std::string username1 = username;
+	
+	std::thread writer([username1, thread_client](){
+	    //initial message to connect
+	    Message m;
+	    m.set_username(username1);
+	    m.set_msg("Now you are in the timeline");
+	    thread_client->Write(m);
+	    
+	    std::string input;
+	    //post_time = google::protobuf::util::TimeUtil::GetCurrentTime();
+	    while(1){
+	        auto post_time = new Timestamp();
+	        post_time->set_seconds(time(NULL));
+	        post_time->set_nanos(0);
+	        
+	        input = getPostMessage();
+	        m.set_username(username1);
+	        m.set_msg(input);
+	        m.set_allocated_timestamp(post_time);
+	        if(thread_client->Write(m) == false){
+	            break;
+	        }
+	    }
+	    
+	    thread_client->WritesDone();
+	});
+	
+	std::thread reader([&](){
+	    Message m;
+	    Timestamp blank;
+	    while(thread_client->Read(&m)){
+	        if(blank != m.timestamp()){
     	        time_t post_time = google::protobuf::util::TimeUtil::TimestampToTimeT(m.timestamp());
     	        displayPostMessage(m.username(), m.msg(), post_time);
-    	    }
-    	});
-    	
-    	reader.join();
-    	writer.join();
-    	
-    	std::cout << "Threads are joined" << std::endl;
-	}
+	        }
+	        else{
+	            std::cout << m.msg() << std::endl;
+	        }
+	    }
+	});
+	
+	reader.join();
+	writer.join();
+	
+	std::cout << "Threads are joined" << std::endl;
 }

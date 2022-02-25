@@ -268,17 +268,19 @@ class SNSServiceImpl final : public SNSService::Service {
     
     Message m;
     while(stream->Read(&m)){
+      std::cout << "start loop" << std::endl;
       std::string msg = m.msg();
       std::string name = m.username();
       std::string filename = name + ".txt";
       std::vector<std::string> twenty_msg;
       std::string line;
-      std::string file_data = google::protobuf::util::TimeUtil::ToString(m.timestamp()) + " // " + name + " / " + msg + "\n";
+      std::string file_data = name + "(" + google::protobuf::util::TimeUtil::ToString(m.timestamp()) + ") >> " +  msg;
+      std::cout << google::protobuf::util::TimeUtil::ToString(m.timestamp()) << std::endl;
       //have a file that stores the messages input by the user
       std::ofstream file(filename, std::ios::app|std::ios::out|std::ios::in);
       //have a file that stores the messages input by the users the current user is following
       std::ifstream taken(name+"following.txt");
-      
+      std::cout << "after ifstream" << std::endl;
       int file_length;
       
       if(msg == "Now you are in the timeline"){
@@ -301,6 +303,7 @@ class SNSServiceImpl final : public SNSService::Service {
           if(file_length > 20){
             if(num_msg < file_length - 20){
               num_msg++;
+              continue;
             }
             else{
               twenty_msg.push_back(line);
@@ -313,9 +316,13 @@ class SNSServiceImpl final : public SNSService::Service {
         
         //write the message to send the 20 msges
         Message return_msg;
-        for(int i = 0; i < twenty_msg.size(); i++){
-          return_msg.set_msg(twenty_msg[i]);
-          stream->Write(return_msg);
+        int count = 0;
+        for(int i = twenty_msg.size() - 1; i >= 0; i--){
+          if(count < 20){
+            return_msg.set_msg(twenty_msg[i]);
+            stream->Write(return_msg);
+            count++;
+          }
         }
         
         continue;
@@ -335,7 +342,7 @@ class SNSServiceImpl final : public SNSService::Service {
             user follower;
             for(auto j = users->begin(); j != users->end(); ++j){
               follower = *j;
-              if(follower.username == follower_name){
+              if(follower.username == follower_name && follower.username != name){
                 if(follower.server_thread != 0 && follower.connection != false){
                   follower.server_thread->Write(m);
                 }
