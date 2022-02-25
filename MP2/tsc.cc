@@ -262,10 +262,13 @@ void Client::processTimeline()
     	    thread_client->Write(m);
     	    
     	    std::string input;
+    	    Timestamp post_time = Timestamp();
+    	    post_time = google::protobuf::util::TimeUtil::GetCurrentTime();
     	    while(1){
     	        input = getPostMessage();
     	        m.set_username(username1);
     	        m.set_msg(input);
+    	        m.set_allocated_timestamp(&post_time);
     	        if(thread_client->Write(m) == false){
     	            break;
     	        }
