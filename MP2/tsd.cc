@@ -37,6 +37,8 @@ struct user{
     std::vector<std::string> followers;
     std::vector<std::string> following;
     ServerReaderWriter<Message, Message>* server_thread = 0;
+    int file_size = 0;
+    bool connection = true;
 };
 
 class SNSServiceImpl final : public SNSService::Service {
@@ -268,11 +270,18 @@ class SNSServiceImpl final : public SNSService::Service {
     while(stream->Read(&m)){
       std::string msg = m.msg();
       std::string name = m.username();
+      std::string filename = name + ".txt";
+      std::vector<std::string> twenty_msg;
+      std::string line;
+      std::string file_data = google::protobuf::util::TimeUtil::ToString(m.timestamp()) + " // " + name + " / " + msg + "\n";
+      //have a file that stores the messages input by the user
+      std::ofstream file(filename, std::ios::app|std::ios::out|std::ios::in);
+      //have a file that stores the messages input by the users the current user is following
+      std::ifstream taken(name+"following.txt");
+      
+      int file_length;
       
       if(msg == "Now you are in the timeline"){
-        //output to file
-      }
-      else{
         user cur_user;
         for(auto i = users->begin(); i != users->end(); ++i){
           cur_user = *i;
@@ -281,9 +290,57 @@ class SNSServiceImpl final : public SNSService::Service {
               std::cout << "Assigning a stream for user" << std::endl;
               i->server_thread = stream;
             }
+            file_length = cur_user.file_size;
+          }
+        }
+        
+        //get the twenty most recent messages
+        int num_msg = 0;
+        while(getline(taken, line)){
+          if(file_length > 20){
+            if(num_msg < file_length - 20){
+              num_msg++;
+            }
+            else{
+              twenty_msg.push_back(line);
+            }
+          }
+          else{
+            twenty_msg.push_back(line);
+          }
+        }
+        
+        //write the message to send the 20 msges
+        Message return_msg;
+        for(int i = 0; i < twenty_msg.size(); i++){
+          return_msg.set_msg(twenty_msg[i]);
+          stream->Write(return_msg);
+        }
+        
+        continue;
+      }
+      else{
+        file << file_data;
+      }
+      
+      //write the msg to the followers of the user
+      user cur_user;
+      for(auto i = users->begin(); i != users->end(); ++i){
+        cur_user = *i;
+        if(cur_user.username == name){
+          user follower;
+          for(auto j = i->followers.begin(); j != i->followers.end(); ++j){
+            follower = *j;
+            if(follower.server_thread != 0 && follower.connection != false){
+              follower.server_thread->Write(m);
+            }
+            
+            
+            
           }
         }
       }
+      
     }
     
     return Status::OK;
