@@ -291,6 +291,7 @@ class SNSServiceImpl final : public SNSService::Service {
               i->server_thread = stream;
             }
             file_length = cur_user.file_size;
+            break;
           }
         }
         
@@ -328,15 +329,24 @@ class SNSServiceImpl final : public SNSService::Service {
       for(auto i = users->begin(); i != users->end(); ++i){
         cur_user = *i;
         if(cur_user.username == name){
-          user follower;
-          for(auto j = i->followers.begin(); j != i->followers.end(); ++j){
-            follower = *j;
-            if(follower.server_thread != 0 && follower.connection != false){
-              follower.server_thread->Write(m);
+          std::string follower_name;
+          for(auto h = i->followers.begin(); h != i->followers.end(); ++h){
+            follower_name = *h;
+            user follower;
+            for(auto j = users->begin(); j != users->end(); ++j){
+              follower = *j;
+              if(follower.username == follower_name){
+                if(follower.server_thread != 0 && follower.connection != false){
+                  follower.server_thread->Write(m);
+                }
+                
+                std::string follower_name = follower.username + "following.txt";
+                std::ofstream follower_file(follower_name, std::ios::app|std::ios::out|std::ios::in);
+                follower_file << file_data;
+                j->file_size += 1;
+                
+              }
             }
-            
-            
-            
           }
         }
       }

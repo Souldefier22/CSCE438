@@ -221,13 +221,7 @@ IReply Client::processCommand(std::string& input)
 		ire.comm_status = SUCCESS;
 	}
     
-    if(ire.comm_status == SUCCESS){
-        return ire;
-    }
-    else{
-        ire.comm_status = FAILURE_UNKNOWN;
-        return ire;
-    }
+    return ire;
 }
 
 void Client::processTimeline()
