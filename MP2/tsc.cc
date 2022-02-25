@@ -258,7 +258,7 @@ void Client::processTimeline()
     	    //initial message to connect
     	    Message m;
     	    m.set_username(username1);
-    	    m.set_msg("connect");
+    	    m.set_msg("Now you are in the timeline");
     	    thread_client->Write(m);
     	    
     	    std::string input;

@@ -30,11 +30,13 @@ using csce438::Reply;
 using csce438::SNSService;
 
 std::vector<struct user>* users = new std::vector<struct user>;
+std::string server_address;
 
 struct user{
     std::string username;
     std::vector<std::string> followers;
     std::vector<std::string> following;
+    ServerReaderWriter<Message, Message>* server_thread = 0;
 };
 
 class SNSServiceImpl final : public SNSService::Service {
@@ -78,7 +80,7 @@ class SNSServiceImpl final : public SNSService::Service {
     std::string follow = request->arguments(0);
     
     if(name == follow){
-      reply->set_msg("Username is invalid");
+      reply->set_msg("Already following");
       return Status::OK;
     }
     
@@ -243,6 +245,7 @@ class SNSServiceImpl final : public SNSService::Service {
     if(used == false){
       struct user new_user;
       new_user.username = name;
+      new_user.followers.push_back(name);
       
       users->push_back(new_user);
       reply->set_msg("Successful Login");
@@ -260,6 +263,29 @@ class SNSServiceImpl final : public SNSService::Service {
     // receiving a message/post from a user, recording it in a file
     // and then making it available on his/her follower's streams
     // ------------------------------------------------------------
+    
+    Message m;
+    while(stream->Read(&m)){
+      std::string msg = m.msg();
+      std::string name = m.username();
+      
+      if(msg == "Now you are in the timeline"){
+        //output to file
+      }
+      else{
+        user cur_user;
+        for(auto i = users->begin(); i != users->end(); ++i){
+          cur_user = *i;
+          if(cur_user.username == name){
+            if(cur_user.server_thread == 0){
+              std::cout << "Assigning a stream for user" << std::endl;
+              i->server_thread = stream;
+            }
+          }
+        }
+      }
+    }
+    
     return Status::OK;
   }
 
@@ -274,6 +300,7 @@ void RunServer(std::string port_no) {
   
   std::string server_addr("127.0.0.1:");
   server_addr = server_addr + port_no;
+  server_address = server_addr;
   SNSServiceImpl service;
   
   //build and start the server
