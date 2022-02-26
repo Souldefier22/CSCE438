@@ -91,6 +91,8 @@ class SNSServiceImpl final : public SNSService::Service {
     user cur_user;
     bool exists = false;
     bool already_follow = false;
+    std::string filename = follow + "followers.txt";
+    std::ofstream file(filename, std::ios::app|std::ios::out|std::ios::in);
     //check if name already exists
     if(users->empty() != true){
       for(auto i = users->begin(); i != users->end(); ++i){
@@ -102,6 +104,7 @@ class SNSServiceImpl final : public SNSService::Service {
           if(std::find(cur_user.followers.begin(), cur_user.followers.end(), name) == cur_user.followers.end()){
             i->followers.push_back(name);
             std::cout << "added to followers" << std::endl;
+            file << name + "\n";
           }
           else{
             already_follow = true;
@@ -175,6 +178,9 @@ class SNSServiceImpl final : public SNSService::Service {
     
     user cur_user;
     bool exists = false;
+    std::string filename = unfollow + "followers.txt";
+    std::ofstream file(filename, std::ios::trunc|std::ios::out|std::ios::in);
+    std::string file_data = "";
     //check if name already exists
     if(users->empty() != true){
       for(auto i = users->begin(); i != users->end(); ++i){
@@ -186,6 +192,15 @@ class SNSServiceImpl final : public SNSService::Service {
           if(std::find(cur_user.followers.begin(), cur_user.followers.end(), name) != cur_user.followers.end()){
             i->followers.erase(std::find(i->followers.begin(), i->followers.end(), name));
             std::cout << "removed from followers" << std::endl;
+            
+            //update the file
+            for(int j = 0; j < i->followers.size(); j++){
+                if(i->followers[j] != unfollow){ 
+                  file_data += i->followers[j] + "\n";
+                }
+            }
+            file_data += "\n";
+            file << file_data;
           }
           else{
             break;
@@ -244,10 +259,21 @@ class SNSServiceImpl final : public SNSService::Service {
       }
     }
     
+    std::ifstream taken(name+"followers.txt");
+    std::string line;
+    
     if(used == false){
       struct user new_user;
       new_user.username = name;
       new_user.followers.push_back(name);
+      
+      while(getline(taken, line)){
+        if(!line.empty()){
+          if(line != name){
+            new_user.followers.push_back(line);
+          }
+        }
+      }
       
       users->push_back(new_user);
       reply->set_msg("Successful Login");
