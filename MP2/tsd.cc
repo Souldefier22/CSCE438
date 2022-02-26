@@ -63,7 +63,6 @@ class SNSServiceImpl final : public SNSService::Service {
           if(cur_user.username == name && !cur_user.followers.empty()){
             for(it = cur_user.followers.begin(); it != cur_user.followers.end(); it++){
               reply->add_following_users(*it);
-              std::cout << "following user is: " << *it << std::endl;
             }
           }
       }
@@ -86,8 +85,6 @@ class SNSServiceImpl final : public SNSService::Service {
       return Status::OK;
     }
     
-    std::cout << "the follow is: " << follow << std::endl;
-    
     user cur_user;
     bool exists = false;
     bool already_follow = false;
@@ -103,7 +100,6 @@ class SNSServiceImpl final : public SNSService::Service {
           //check if the input username is already being followed by current user
           if(std::find(cur_user.followers.begin(), cur_user.followers.end(), name) == cur_user.followers.end()){
             i->followers.push_back(name);
-            std::cout << "added to followers" << std::endl;
             file << name + "\n";
           }
           else{
@@ -115,16 +111,13 @@ class SNSServiceImpl final : public SNSService::Service {
         //find the current user
         if(cur_user.username == name && already_follow == false){
           //check if the current user is already following the input username
-          std::cout << "before the find" << std::endl;
           if(std::find(cur_user.following.begin(), cur_user.following.end(), follow) == cur_user.following.end()){
             i->following.push_back(follow);
-            std::cout << "added to following" << std::endl;
           }
           else{
             already_follow = true;
             break;
           }
-          std::cout << "after the find" << std::endl;
         }
       }
     }
@@ -133,7 +126,6 @@ class SNSServiceImpl final : public SNSService::Service {
     
     if(exists == false){
       user cur_user2;
-      std::cout << "fixing mistake" << std::endl;
       //make sure the bad username isn't included as someone being followed
       if(users->empty() != true){
         for(auto i = users->begin(); i != users->end(); ++i){
@@ -174,8 +166,6 @@ class SNSServiceImpl final : public SNSService::Service {
       return Status::OK;
     }
     
-    std::cout << "the unfollow is: " << unfollow << std::endl;
-    
     user cur_user;
     bool exists = false;
     std::string filename = unfollow + "followers.txt";
@@ -191,7 +181,6 @@ class SNSServiceImpl final : public SNSService::Service {
           //check if the input username is already being followed by current user
           if(std::find(cur_user.followers.begin(), cur_user.followers.end(), name) != cur_user.followers.end()){
             i->followers.erase(std::find(i->followers.begin(), i->followers.end(), name));
-            std::cout << "removed from followers" << std::endl;
             
             //update the file
             for(int j = 0; j < i->followers.size(); j++){
@@ -210,16 +199,12 @@ class SNSServiceImpl final : public SNSService::Service {
         //find the current user
         if(cur_user.username == name){
           //check if the current user is already following the input username
-          std::cout << "before the find" << std::endl;
           if(std::find(cur_user.following.begin(), cur_user.following.end(), unfollow) != cur_user.following.end()){
-            std::cout << "before the erase" << std::endl;
             i->following.erase(std::find(i->following.begin(), i->following.end(), unfollow));
-            std::cout << "after the erase" << std::endl;
           }
           else{
             break;
           }
-          std::cout << "after the find in unfollow" << std::endl;
         }
       }
     }
@@ -294,19 +279,16 @@ class SNSServiceImpl final : public SNSService::Service {
     
     Message m;
     while(stream->Read(&m)){
-      std::cout << "start loop" << std::endl;
       std::string msg = m.msg();
       std::string name = m.username();
       std::string filename = name + ".txt";
       std::vector<std::string> twenty_msg;
       std::string line;
       std::string file_data = name + "(" + google::protobuf::util::TimeUtil::ToString(m.timestamp()) + ") >> " +  msg;
-      std::cout << google::protobuf::util::TimeUtil::ToString(m.timestamp()) << std::endl;
       //have a file that stores the messages input by the user
       std::ofstream file(filename, std::ios::app|std::ios::out|std::ios::in);
       //have a file that stores the messages input by the users the current user is following
       std::ifstream taken(name+"following.txt");
-      std::cout << "after ifstream" << std::endl;
       int file_length;
       
       if(msg == "Now you are in the timeline"){
@@ -315,7 +297,6 @@ class SNSServiceImpl final : public SNSService::Service {
           cur_user = *i;
           if(cur_user.username == name){
             if(cur_user.server_thread == 0){
-              std::cout << "Assigning a stream for user" << std::endl;
               i->server_thread = stream;
             }
             file_length = cur_user.file_size;
@@ -409,7 +390,6 @@ void RunServer(std::string port_no) {
   builder.RegisterService(&service);
   
   std::unique_ptr<Server> server(builder.BuildAndStart());
-  std::cout << "The server is now listening on: " << server_addr << std::endl;
   server->Wait();
 }
 

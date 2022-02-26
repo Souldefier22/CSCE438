@@ -91,7 +91,6 @@ int Client::connectTo()
     
     if(rep.msg() == "Username is invalid"){
         ire.comm_status = FAILURE_ALREADY_EXISTS;
-        std::cout << "Bad username" << std::endl;
         return -1;
     }
     else{
@@ -99,7 +98,6 @@ int Client::connectTo()
     }
     
     if(ire.grpc_status.ok() == false){
-        std::cout << "The login failed" << std::endl;
         return -1;
     }
     
@@ -160,7 +158,6 @@ IReply Client::processCommand(std::string& input)
     char cinput[input.length() + 1];
     strcpy(cinput, input.c_str());
     if(strncmp(cinput, "UNFOLLOW", 8) == 0){
-        std::cout << "Unfollow found" << std::endl;
 		new_req.set_username(username);
 		std::string user_arg = input.substr(9, input.length()-8); 
 		new_req.add_arguments(user_arg);
@@ -179,7 +176,6 @@ IReply Client::processCommand(std::string& input)
 		}
 	}
     else if(strncmp(cinput, "FOLLOW", 6) == 0){
-        std::cout << "Follow found" << std::endl;
 		new_req.set_username(username);
 		std::string user_arg = input.substr(7, input.length()-6); 
 		new_req.add_arguments(user_arg);
@@ -201,7 +197,6 @@ IReply Client::processCommand(std::string& input)
 		}
 	}
 	else if(strncmp(cinput, "LIST", 4) == 0){
-	    std::cout << "List found" << std::endl;
 		new_req.set_username(username);
 		
 		Status rec_status = stub_->List(&context, new_req, &rep);
@@ -289,6 +284,4 @@ void Client::processTimeline()
 	
 	reader.join();
 	writer.join();
-	
-	std::cout << "Threads are joined" << std::endl;
 }
